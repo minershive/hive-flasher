@@ -1,5 +1,8 @@
 ## Hive OS Drive Flashing Utility
 
+![image 2018-04-25 16 42 29](https://user-images.githubusercontent.com/38013470/39249615-b4d10d6a-48a7-11e8-93b4-9598f4055b6b.jpg)
+
+
 This is a bulk flashing utility which will help you to do 
 headless and keyboardless migration to Hive on your farm.
 
