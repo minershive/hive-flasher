@@ -1,0 +1,25 @@
+[Unit]
+Description=Hive Flasher
+After=multi-user.target
+
+[Service]
+#Type=oneshot
+Type=idle
+
+ExecStart=/hive-flasher/hive-flasher
+TimeoutStartSec=infinity
+
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=hive
+
+StandardOutput=tty
+StandardInput=tty
+TTYPath=/dev/tty1
+
+#TTYReset=yes
+#TTYVHangup=yes
+
+
+[Install]
+WantedBy=multi-user.target

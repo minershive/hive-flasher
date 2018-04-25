@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+cd `dirname $0`
+
+. colors
+
+#sleep 5
+#chvt 2
+
+
+echo -e "${YELLOW}
+======================================
+=== Hive OS Drive Flashing Utility ===
+======================================
+${NOCOLOR}
+"
+
+sleep 1
+
+
+function install () {
+
+	#imgfile=hive-0.5-45-20180418.img
+	imgfile=`realpath hive.img`
+	seqfile=RIG_ID_SEQUENCE.txt
+
+
+
+
+	[[ ! -e $imgfile ]] &&
+		echo -e "${RED}$imgfile does not exist${NOCOLOR}" &&
+		return 1
+
+
+
+
+	bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
+	bootdisk=${bootpart::-1} #cutoff partnumber
+	echo "Booted from $bootpart partition"
+
+
+	#Disk /dev/sdb: 111.8 GiB, 120034123776 bytes, 234441648 sectors
+	otherdisk=`fdisk -l | grep 'Disk /dev/' | grep -v "$bootdisk" | head -n1 | awk '{print $2}'`
+	otherdisk=${otherdisk::-1} #cutoff :
+
+	[[ -z $otherdisk ]] &&
+		fdisk -l | grep 'Disk /dev/' &&
+		echo -e "${RED}Unable to detect other disk${NOCOLOR}" &&
+		return 1
+
+	echo ""
+	echo -e "Detected other disk ${BPURPLE}$otherdisk${NOCOLOR}"
+	fdisk -l | grep "Disk $otherdisk:"
+
+
+	#echo -n "Write will autostart in 5 seconds, or press ENTER to ABORT"
+	read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds ENTER to continue " -t 10 input
+	[[ $input == $'\e' ]] &&
+		echo -e "\nEscape pressed, aborting"
+	echo
+
+
+
+	echo
+
+
+	typeset -i RIG_ID=$(cat $seqfile)
+	RIG_PASSWD=$(cat RIG_PASSWD.txt)
+	[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
+
+	RIG_ID=$((RIG_ID+1))
+
+	echo -e "RIG_ID:      ${BGREEN}$RIG_ID${NOCOLOR}"
+	echo -e "RIG_PASSWD:  ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
+	read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
+	if [[ $input == $'\e' ]]; then
+		echo
+		while true; do
+			read -p "Enter new RIG_ID: " RIG_ID
+			typeset -i RIG_ID="$RIG_ID"
+			[[ $RIG_ID > 0 ]] &&
+				echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}" &&
+				sleep 2 &&
+				break
+		done
+	fi
+	echo
+
+
+
+	echo
+
+
+
+	#otherdisk=/dev/null #for testing
+	echo -e "${YELLOW}Writing image to $otherdisk${NOCOLOR}"
+	ddcmd="dd if=$imgfile of=$otherdisk bs=10M status=progress"
+	echo -e "${CYAN}$ddcmd${NOCOLOR}"
+	eval "$ddcmd"
+	[[ $? > 0 ]] && echo -e "${RED}Error writing image${NOCOLOR}" && return 1
+	sync
+
+
+
+
+	echo
+
+
+
+
+	partprobe
+
+	mount -t ntfs-3g ${otherdisk}1 /mnt/hive-config
+	[[ $? > 0 ]] && echo -e "${RED}Unable to mount ${otherdisk1}${NOCOLOR}" && return 1
+
+rig_conf="HIVE_HOST_URL=\"https://api.hiveos.farm\"
+RIG_ID=\"$RIG_ID\"
+RIG_PASSWD=\"$RIG_PASSWD\"
+"
+	echo "Writing config:"
+	echo "$rig_conf"
+	echo "$rig_conf" > /mnt/hive-config/rig.conf
+	sync
+
+	umount /mnt/hive-config
+
+
+	#Save number
+	echo $RIG_ID > RIG_ID_SEQUENCE.txt
+
+
+	echo
+	echo -e "${GREEN}Done. You can shutdown.${NOCOLOR}"
+}
+
+install
+
+
+bash --login

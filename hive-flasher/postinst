@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+chown -R user /hive-flasher
+
+update-grub
+
+systemctl disable getty@tty1
+
+[[ -e /lib/systemd/system/hive-flasher.service ]] && rm /lib/systemd/system/hive-flasher.service
+ln -s /hive-flasher/hive-flasher.service /lib/systemd/system/hive-flasher.service
+systemctl disable hive-flasher
+systemctl enable hive-flasher
+
+
+[[ ! -e /hive-flasher/hive.img ]] && echo "=== Don't forget to put hive.img ==="
