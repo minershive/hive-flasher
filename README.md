@@ -8,20 +8,28 @@ headless and keyboardless migration to Hive on your farm.
 
 You can find prebuild image here http://download.hiveos.farm/
 
-Or you can make it yourself with the following steps.
+
+### Manual actions
+
+When you want to alter your password you can press Ctrl+C after boot to stop flashing.
+Or press Esc after the first message.
+Then maybe Alt+F2 to switch to other Linux terminal.
+Run `mc` to find /mnt/hive-install/RIG_PASSWD.txt and edit it.
+Then you can run `/hive-flasher/hive-flasher` again.
+
+
+
+### Custom system build
+
+Or you can make image yourself with the following steps.
 
 - Create Ubuntu Server installation to SSD
 - Put these files on disk
 - Run `postinst`
-- Put the latest Hive image to /hive-flasher
-- Make a symlink like `ln -s hive-latest-0.5.xxx.img hive.img`
-- Put your staring RIG_ID and and RIG_PASSWD in corresponding file in /hive-flasher/*.txt (assuming you have created them on the web)
+- Put the latest Hive image to /mnt/hive-install (you'd better create NTFS partition)
+- Put your starting rig id /mnt/hive-install/RIG_ID_SEQUENCE.txt and password into RIG_PASSWD.txt 
 - Boot from this SSD on the rig leaving rig's drive in place
 - After boot the script will detect rig's drive and hive flash image there with and precreate rig.conf
 - ...
 - PROFIT
-
-When you want to alter your password you can press Ctrl+C after boot to stop flashing.
-Run `mc` ti find /hive-flasher/RIG_PASSWD.txt and edit it.
-Then you can run `hive-flasher` again.
 
