@@ -83,8 +83,6 @@ function install () {
 	RIG_PASSWD=$(cat $RIG_PASSWD_FILE | dos2unix | head -n 1)
 	[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
 
-	RIG_ID=$((RIG_ID+1))
-
 	echo -e "RIG_ID:      ${BGREEN}$RIG_ID${NOCOLOR}"
 	echo -e "RIG_PASSWD:  ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
 	read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
@@ -107,8 +105,10 @@ function install () {
 
 
 	#Get preconfigured api host
-	[[ -e /mnt/hive-config/rig-config-example.txt ]] &&
+	if [[ -e /mnt/hive-config/rig-config-example.txt ]]; then
 		eval `cat /mnt/hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
+		eval `cat /mnt/hive-config/rig-config-example.txt | dos2unix | grep '^X_DISABLED='`
+	fi
 	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
 
 
@@ -116,6 +116,10 @@ rig_conf="HIVE_HOST_URL=\"$HIVE_HOST_URL\"
 RIG_ID=\"$RIG_ID\"
 RIG_PASSWD=\"$RIG_PASSWD\"
 "
+	if [[ ! -z $X_DISABLED ]]; then
+		rig_conf+="X_DISABLED=$X_DISABLED"$'\n'
+	fi
+
 	echo -e "${YELLOW}rig.conf:${NOCOLOR}"
 	echo "$rig_conf"
 
@@ -166,6 +170,7 @@ RIG_PASSWD=\"$RIG_PASSWD\"
 	sync
 
 	#Save number
+	RIG_ID=$((RIG_ID+1))
 	echo -n $RIG_ID > $RIG_ID_SEQUENCE_FILE
 	sync
 
