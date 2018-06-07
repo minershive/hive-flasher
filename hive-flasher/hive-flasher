@@ -10,9 +10,14 @@ cd `dirname $0`
 
 
 RIG_ID_SEQUENCE_FILE=/mnt/hive-install/RIG_ID_SEQUENCE.txt
-RIG_PASSWD_FILE=/mnt/hive-install/RIG_PASSWD.txt
+#RIG_PASSWD_FILE=/mnt/hive-install/RIG_PASSWD.txt
+RIG_CONF_FILE=/mnt/hive-install/hive-config.stub/rig-config-example.txt
 
+sleep 1
 
+ip=$(ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//')
+echo -e "${PURPLE}$ip${NOCOLOR}"
+echo
 
 echo -e "${YELLOW}
 ======================================
@@ -26,167 +31,192 @@ sleep 1
 
 function install () {
 
-	#imgfile=hive-0.5-45-20180418.img
-	#imgfile=`realpath hive.img`
+    #imgfile=hive-0.5-45-20180418.img
+    #imgfile=`realpath hive.img`
 
 
-	imgfile=`find /mnt/hive-install -name "hive-*.img" | head -n 1`
+    imgfile=`find /mnt/hive-install -name "hive*.img" | head -n 1`
 
-	[[ -z $imgfile ]] &&
-		echo -e "${RED}hive image not found, place it on disk please${NOCOLOR}" &&
-		return 1
+    [[ -z $imgfile ]] &&
+        echo -e "${RED}hive image not found, place it on disk please${NOCOLOR}" &&
+        return 1
 
-	[[ ! -e $imgfile ]] &&
-		echo -e "${RED}$imgfile does not exist${NOCOLOR}" &&
-		return 1
-
-
-	echo -e "Found Hive image: ${GREEN}`basename $imgfile`${NOCOLOR}";
+    [[ ! -e $imgfile ]] &&
+        echo -e "${RED}$imgfile does not exist${NOCOLOR}" &&
+        return 1
 
 
-
-	bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
-	bootdisk=${bootpart::-1} #cutoff partnumber
-	echo "Booted from $bootpart partition"
-
-
-	#Disk /dev/sdb: 111.8 GiB, 120034123776 bytes, 234441648 sectors
-	otherdisk=`fdisk -l | grep 'Disk /dev/' | grep -v "$bootdisk" | head -n1 | awk '{print $2}'`
-	[[ -z $otherdisk ]] &&
-		echo -e "${RED}No other disk found${NOCOLOR}" &&
-		return 1
-
-	otherdisk=${otherdisk::-1} #cutoff :
-
-	[[ -z $otherdisk ]] &&
-		fdisk -l | grep 'Disk /dev/' &&
-		echo -e "${RED}Unable to detect other disk${NOCOLOR}" &&
-		return 1
-
-	echo ""
-	echo -e "Detected other disk ${BPURPLE}$otherdisk${NOCOLOR}"
-	fdisk -l | grep "Disk $otherdisk:"
-
-
-	read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
-	[[ $input == $'\e' ]] &&
-		echo -e "\nEscape pressed, aborting" &&
-		return 0
-	echo
+    echo -e "Found Hive image: ${GREEN}`basename $imgfile`${NOCOLOR}";
 
 
 
-	echo
+    bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
+    bootdisk=${bootpart::-1} #cutoff partnumber
+    echo "Booted from $bootpart partition"
 
 
-	typeset -i RIG_ID=$(cat $RIG_ID_SEQUENCE_FILE)
-	RIG_PASSWD=$(cat $RIG_PASSWD_FILE | dos2unix | head -n 1)
-	[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
+    #Disk /dev/sdb: 111.8 GiB, 120034123776 bytes, 234441648 sectors
+    otherdisk=`fdisk -l | grep 'Disk /dev/' | grep -v "$bootdisk" | head -n1 | awk '{print $2}'`
+    [[ -z $otherdisk ]] &&
+        echo -e "${RED}No other disk found${NOCOLOR}" &&
+        return 1
 
-	echo -e "RIG_ID:      ${BGREEN}$RIG_ID${NOCOLOR}"
-	echo -e "RIG_PASSWD:  ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
-	read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
-	if [[ $input == $'\e' ]]; then
-		echo
-		while true; do
-			read -p "Enter new RIG_ID: " RIG_ID
-			typeset -i RIG_ID="$RIG_ID"
-			[[ $RIG_ID > 0 ]] &&
-				echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}" &&
-				sleep 2 &&
-				break
-		done
-	fi
-	echo
+    otherdisk=${otherdisk::-1} #cutoff :
+
+    [[ -z $otherdisk ]] &&
+        fdisk -l | grep 'Disk /dev/' &&
+        echo -e "${RED}Unable to detect other disk${NOCOLOR}" &&
+        return 1
+
+    echo ""
+    echo -e "Detected other disk ${BPURPLE}$otherdisk${NOCOLOR}"
+    fdisk -l | grep "Disk $otherdisk:"
 
 
-
-	echo
-
-
-	#Get preconfigured api host
-	if [[ -e /mnt/hive-config/rig-config-example.txt ]]; then
-		eval `cat /mnt/hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-		eval `cat /mnt/hive-config/rig-config-example.txt | dos2unix | grep '^X_DISABLED='`
-	fi
-	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
-
-
-rig_conf="HIVE_HOST_URL=\"$HIVE_HOST_URL\"
-RIG_ID=\"$RIG_ID\"
-RIG_PASSWD=\"$RIG_PASSWD\"
-"
-	if [[ ! -z $X_DISABLED ]]; then
-		rig_conf+="X_DISABLED=$X_DISABLED"$'\n'
-	fi
-
-	echo -e "${YELLOW}rig.conf:${NOCOLOR}"
-	echo "$rig_conf"
+    read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
+    [[ $input == $'\e' ]] &&
+        echo -e "\nEscape pressed, aborting" &&
+        return 0
+    echo
 
 
 
-	echo
-
-	echo -e "Default Network configuration will be written"
-	read -n 1 -p "Press ESCAPE to EDIT net config or wait 10 seconds or ENTER to continue " -t 10 input
-	if [[ $input == $'\e' ]]; then
-		mc -e /mnt/hive-install/hive-config.stub/network/20-ethernet.network
-		sync
-		echo -e "Network configuration was edited, will continue in 2 seconds"
-		sleep 2
-	fi
+    echo
 
 
-	echo
-	echo
+    #Get preconfigured api host
+    if [[ ! -e $RIG_CONF_FILE ]]; then
+        echo -e "${RED}$RIG_CONF_FILE does not exist${NOCOLOR}" &&
+        return 1
+        #eval `cat $RIG_CONF_FILE | dos2unix | grep '^HIVE_HOST_URL='`
+        #eval `cat $RIG_CONF_FILE | dos2unix | grep '^RIG_PASSWD='`
+        #eval `cat $RIG_CONF_FILE | dos2unix | grep '^X_DISABLED='`
+    fi
+    rig_conf=`cat $RIG_CONF_FILE | dos2unix`
+    eval "$rig_conf"
+    #[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
 
-	#otherdisk=/dev/null #for testing
-	echo -e "${YELLOW}Writing image to $otherdisk${NOCOLOR}"
-	ddcmd="dd if=$imgfile of=$otherdisk bs=10M status=progress"
-	echo -e "${CYAN}$ddcmd${NOCOLOR}"
-	eval "$ddcmd"
-	[[ $? > 0 ]] && echo -e "${RED}Error writing image${NOCOLOR}" && return 1
-	sync
-
-
-
-
-	echo
-
-
-
-
-	partprobe
-
-	mount -t ntfs-3g ${otherdisk}1 /mnt/hive-config
-	[[ $? > 0 ]] && echo -e "${RED}Unable to mount ${otherdisk1}${NOCOLOR}" && return 1
-
-	# Update config partition with predefined configs
-	[[ -d /mnt/hive-install/hive-config.stub ]] &&
-		cp -rf /mnt/hive-install/hive-config.stub/* /mnt/hive-config/
+    RIG_ID=$(cat $RIG_ID_SEQUENCE_FILE | head -n 1 | dos2unix)
+    [[ $RIG_ID == 0 ]] && RIG_ID=
+    #RIG_PASSWD=$(cat $RIG_PASSWD_FILE | dos2unix | head -n 1)
+    #[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
 
 
-	echo "$rig_conf" > /mnt/hive-config/rig.conf
-	sync
+    [[ -z $PROJECT_HASH && -z $RIG_ID ]] &&
+        echo -e "${RED}You need to set PROJECT_HASH in $RIG_CONF_FILE or RIG_ID sequence in $RIG_ID_SEQUENCE_FILE${NOCOLOR}" &&
+        return 1
 
-	#Save number
-	RIG_ID=$((RIG_ID+1))
-	echo -n $RIG_ID > $RIG_ID_SEQUENCE_FILE
-	sync
+    [[ -z $RIG_PASSWD ]] &&
+        echo -e "${RED}You need to set RIG_PASSWD in $RIG_CONF_FILE${NOCOLOR}" &&
+        return 1
+
+    [[ ! -z $PROJECT_HASH ]] &&
+    echo -e "PROJECT_HASH:  ${CYAN}$PROJECT_HASH${NOCOLOR}"
+    [[ ! -z $RIG_ID ]] &&
+    echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
+    echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
+    read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
+    if [[ $input == $'\e' ]]; then
+        echo
+        while true; do
+            read -p "Enter new RIG_ID: " RIG_ID
+            typeset -i RIG_ID="$RIG_ID"
+            if [[ $RIG_ID > 0 ]]; then
+                echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}"
+                sleep 2
+                PROJECT_HASH=
+                rig_conf=$(sed "s/^PROJECT_HASH=.*\$/PROJECT_HASH=/g" <<< "$rig_conf")
+                break
+            fi
+        done
+    fi
+    echo
+
+
+
+    echo
+
+
+#rig_conf="HIVE_HOST_URL=\"$HIVE_HOST_URL\"
+#RIG_ID=\"$RIG_ID\"
+#RIG_PASSWD=\"$RIG_PASSWD\"
+#"
+#	if [[ ! -z $X_DISABLED ]]; then
+#		rig_conf+="X_DISABLED=$X_DISABLED"$'\n'
+#	fi
+
+    [[ ! -z $RIG_ID ]] &&
+        rig_conf=$(sed "s/^RIG_ID=.*\$/RIG_ID=$RIG_ID/g" <<< "$rig_conf")
+
+    echo -e "${YELLOW}rig.conf:${NOCOLOR}"
+    echo "$rig_conf"
+
+
+
+    echo
+
+    echo -e "Default Network configuration will be written"
+    read -n 1 -p "Press ESCAPE to EDIT net config or wait 10 seconds or ENTER to continue " -t 10 input
+    if [[ $input == $'\e' ]]; then
+        mc -e /mnt/hive-install/hive-config.stub/network/20-ethernet.network
+        sync
+        echo -e "Network configuration was edited, will continue in 2 seconds"
+        sleep 2
+    fi
+
+
+    echo
+    echo
+
+    #otherdisk=/dev/null #for testing
+    echo -e "${YELLOW}Writing image to $otherdisk${NOCOLOR}"
+    ddcmd="dd if=$imgfile of=$otherdisk bs=10M status=progress"
+    echo -e "${CYAN}$ddcmd${NOCOLOR}"
+    eval "$ddcmd"
+    [[ $? > 0 ]] && echo -e "${RED}Error writing image${NOCOLOR}" && return 1
+    sync
 
 
 
 
-	umount /mnt/hive-config
+    echo
 
 
-	echo
-	echo -e "${GREEN}Done. You can shutdown.${NOCOLOR}"
+
+
+    partprobe
+
+    mount -t ntfs-3g ${otherdisk}1 /mnt/hive-config
+    [[ $? > 0 ]] && echo -e "${RED}Unable to mount ${otherdisk1}${NOCOLOR}" && return 1
+
+    # Update config partition with predefined configs
+    [[ -d /mnt/hive-install/hive-config.stub ]] &&
+        cp -rf /mnt/hive-install/hive-config.stub/* /mnt/hive-config/
+
+
+    echo "$rig_conf" > /mnt/hive-config/rig.conf
+    sync
+
+    #Save number
+    if [[ ! -z $RIG_ID ]]; then
+        RIG_ID=$((RIG_ID+1))
+        echo -n $RIG_ID > $RIG_ID_SEQUENCE_FILE
+        sync
+    fi
+
+
+
+
+    umount /mnt/hive-config
+
+
+    echo
+    echo -e "${GREEN}Done. You can shutdown.${NOCOLOR}"
 }
 
 
 function shell() {
-	bash --login
+    bash --login
 }
 
 install

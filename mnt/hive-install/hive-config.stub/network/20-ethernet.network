@@ -1,0 +1,20 @@
+[Match]
+Name=e*
+
+[Network]
+DHCP=yes
+
+#Uncomment the following for static IP, set DHCP=no
+#Address=192.168.0.189/24
+#Gateway=192.168.0.1
+#DNS=192.168.0.1
+
+
+#to disable IPV6 if it's not disabled in grub
+#LinkLocalAddressing=no
+#IPv6AcceptRA=no
+
+
+[DHCP]
+ClientIdentifier=mac
+RouteMetric=10
