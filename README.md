@@ -9,7 +9,17 @@ headless and keyboardless migration to Hive of your farm.
 You can find prebuild image here http://download.hiveos.farm/
 
 
-### Using PROJECT_HASH
+### Step by Step Usage Instructions
+
+- Download hive-flasher image from http://download.hiveos.farm/
+- Download the latest Hive OS image
+- Write hive-flasher.img to your Flash drive with Etcher (https://etcher.io/).
+- After writing the image you will find HIVE-INSTALL disk partition with README.txt and other config files.
+- Unpack Hive OS zip file to flash drive, hive-xxxx.img will be created on there
+- Use the following PROJECT_HASH or "RIG_ID autoincrement" to attach rig to your web account
+
+
+### Using PROJECT_HASH in rig config
 
 Go to your account on the web and find PROJECT_HASH value. 
 Edit `hive-config.stub/rig-config-example.txt` to set PROJECT_HASH and RIG_PASSWD.
@@ -37,9 +47,9 @@ Then you can run `/hive-flasher/hive-flasher` again.
 
 
 
-### Custom system build
+### Advanced. Custom flasher system build.
 
-Or you can make image yourself with the following steps.
+You can make flasher image by yourself with the following steps.
 
 - Create Ubuntu Server installation to SSD
 - Put these files on disk
