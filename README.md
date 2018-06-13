@@ -15,7 +15,7 @@ You can find prebuild image here http://download.hiveos.farm/
 - Download the latest Hive OS image
 - Write hive-flasher.img to your Flash drive with Etcher (https://etcher.io/).
 - After writing the image you will find HIVE-INSTALL disk partition with README.txt and other config files.
-- Unpack Hive OS zip file to flash drive, hive-xxxx.img will be created on there
+- Unpack Hive OS zip file to flash drive, hive-x.x-xx.img should be there after
 - Use the following PROJECT_HASH or "RIG_ID autoincrement" to attach rig to your web account
 
 
