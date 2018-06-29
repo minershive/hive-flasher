@@ -9,10 +9,10 @@ headless and keyboardless migration to Hive of your farm.
 You can find prebuild image here http://download.hiveos.farm/
 
 
-### Using PROJECT_HASH
+### Using FARM_HASH
 
-Go to your account on the web and find PROJECT_HASH value. 
-Edit `hive-config.stub/rig-config-example.txt` to set PROJECT_HASH and RIG_PASSWD.
+Go to your account on the web and find FARM_HASH value. 
+Edit `hive-config.stub/rig-config-example.txt` to set FARM_HASH and RIG_PASSWD.
 The rig will be created on the web after first run with the password specified.
 RIG_ID will be autoassigned.
 
@@ -23,7 +23,7 @@ If you have created rigs sequentially on the web you can set starting RIG_ID in 
 Or you can use this with a single id as well.
 This value will be autoincremented after each flashing. 
 You will be prompted to change it before flashing. 
-Setting RIG_PASSWD is still required. PROJECT_HASH should be left blank.
+Setting RIG_PASSWD is still required. FARM_HASH should be left blank.
 
 
 

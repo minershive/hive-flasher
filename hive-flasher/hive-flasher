@@ -102,16 +102,19 @@ function install () {
     #[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
 
 
-    [[ -z $PROJECT_HASH && -z $RIG_ID ]] &&
-        echo -e "${RED}You need to set PROJECT_HASH in $RIG_CONF_FILE or RIG_ID sequence in $RIG_ID_SEQUENCE_FILE${NOCOLOR}" &&
+
+	[[ ! -z $PROJECT_HASH ]] && FARM_HASH=$PROJECT_HASH #compat
+
+    [[ -z $FARM_HASH && -z $RIG_ID ]] &&
+        echo -e "${RED}You need to set FARM_HASH in $RIG_CONF_FILE or RIG_ID sequence in $RIG_ID_SEQUENCE_FILE${NOCOLOR}" &&
         return 1
 
     [[ -z $RIG_PASSWD ]] &&
         echo -e "${RED}You need to set RIG_PASSWD in $RIG_CONF_FILE${NOCOLOR}" &&
         return 1
 
-    [[ ! -z $PROJECT_HASH ]] &&
-    echo -e "PROJECT_HASH:  ${CYAN}$PROJECT_HASH${NOCOLOR}"
+    [[ ! -z $FARM_HASH ]] &&
+    echo -e "FARM_HASH:  ${CYAN}$FARM_HASH${NOCOLOR}"
     [[ ! -z $RIG_ID ]] &&
     echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
     echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
@@ -124,8 +127,8 @@ function install () {
             if [[ $RIG_ID > 0 ]]; then
                 echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}"
                 sleep 2
-                PROJECT_HASH=
-                rig_conf=$(sed "s/^PROJECT_HASH=.*\$/PROJECT_HASH=/g" <<< "$rig_conf")
+                FARM_HASH=
+                rig_conf=$(sed "s/^FARM_HASH=.*\$/FARM_HASH=/g" <<< "$rig_conf")
                 break
             fi
         done
