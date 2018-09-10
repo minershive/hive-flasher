@@ -12,6 +12,12 @@ cd `dirname $0`
 RIG_ID_SEQUENCE_FILE=/mnt/hive-install/RIG_ID_SEQUENCE.txt
 #RIG_PASSWD_FILE=/mnt/hive-install/RIG_PASSWD.txt
 RIG_CONF_FILE=/mnt/hive-install/hive-config.stub/rig-config-example.txt
+FLASHER_CONFIG_FILE=/mnt/hive-install/flasher-config.txt
+ETH0_CONFIG_FILE=/mnt/hive-install/hive-config.stub/network/20-ethernet.network
+
+flasher_config=`cat $FLASHER_CONFIG_FILE | dos2unix`
+eval "$flasher_config"
+
 
 sleep 1
 
@@ -98,28 +104,34 @@ function install () {
 
     RIG_ID=$(cat $RIG_ID_SEQUENCE_FILE | head -n 1 | dos2unix)
     [[ $RIG_ID == 0 ]] && RIG_ID=
-    #RIG_PASSWD=$(cat $RIG_PASSWD_FILE | dos2unix | head -n 1)
-    #[[ -z $RIG_ID || $RIG_ID == 0 ]] && RIG_ID=0
 
 
-
-	[[ ! -z $PROJECT_HASH ]] && FARM_HASH=$PROJECT_HASH #compat
 
     [[ -z $FARM_HASH && -z $RIG_ID ]] &&
         echo -e "${RED}You need to set FARM_HASH in $RIG_CONF_FILE or RIG_ID sequence in $RIG_ID_SEQUENCE_FILE${NOCOLOR}" &&
         return 1
 
-    [[ -z $RIG_PASSWD ]] &&
-        echo -e "${RED}You need to set RIG_PASSWD in $RIG_CONF_FILE${NOCOLOR}" &&
-        return 1
+	[[ -z $FARM_HASH && ! -z $RIG_ID ]] &&
+		RIG_ID= &&
+        echo -e "${YELLOW}FARM_HASH is set, RIG_ID is ignored${NOCOLOR}"
+
 
     [[ ! -z $FARM_HASH ]] &&
-    echo -e "FARM_HASH:  ${CYAN}$FARM_HASH${NOCOLOR}"
+    	echo -e "FARM_HASH:     ${CYAN}$FARM_HASH${NOCOLOR}"
+
     [[ ! -z $RIG_ID ]] &&
-    echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
-    echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
+	    echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
+
+    [[ ! -z $RIG_PASSWD ]] &&
+    	echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
+
+    [[ ! -z $WORKER_NAME ]] &&
+		echo -e "WORKER_NAME:   ${GREEN}$WORKER_NAME${NOCOLOR}"
+
+
     read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
     if [[ $input == $'\e' ]]; then
+    	[[ ! -z $FARM_HASH ]] && return 1
         echo
         while true; do
             read -p "Enter new RIG_ID: " RIG_ID
@@ -140,32 +152,40 @@ function install () {
     echo
 
 
-#rig_conf="HIVE_HOST_URL=\"$HIVE_HOST_URL\"
-#RIG_ID=\"$RIG_ID\"
-#RIG_PASSWD=\"$RIG_PASSWD\"
-#"
-#	if [[ ! -z $X_DISABLED ]]; then
-#		rig_conf+="X_DISABLED=$X_DISABLED"$'\n'
-#	fi
+    echo -e "Default Network configuration will be written"
+    read -n 1 -p "Press ESCAPE to EDIT net config or wait 10 seconds or ENTER to continue " -t 10 input
+    if [[ $input == $'\e' ]]; then
+        mc -e $ETH0_CONFIG_FILE
+        sync
+        echo -e "Network configuration was edited, will continue in 2 seconds"
+        sleep 2
+    fi
+    echo
+
+	if [[ $APPEND_STATIC_IP_TO_NAME == 1 && ! -z $WORKER_NAME ]]; then
+		Address=
+        eval `cat $ETH0_CONFIG_FILE | dos2unix | grep '^Address='`
+		if [[ ! -z $Address ]]; then #Address=192.168.0.189/24
+			Address=`echo $Address | awk -F'/' '{print $1}'`
+			WORKER_NAME+="-$Address"
+			rig_conf=$(sed "s/^WORKER_NAME=.*\$/WORKER_NAME=$WORKER_NAME/g" <<< "$rig_conf")
+			echo -e "WORKER_NAME:   ${BGREEN}$WORKER_NAME${NOCOLOR}"
+	        sleep 2
+		fi
+	fi
+
+
+    echo
+
 
     [[ ! -z $RIG_ID ]] &&
         rig_conf=$(sed "s/^RIG_ID=.*\$/RIG_ID=$RIG_ID/g" <<< "$rig_conf")
 
     echo -e "${YELLOW}rig.conf:${NOCOLOR}"
-    echo "$rig_conf"
+    echo "$rig_conf" | grep -v '^#' | grep -v "^[[:space:]]*$"
 
 
 
-    echo
-
-    echo -e "Default Network configuration will be written"
-    read -n 1 -p "Press ESCAPE to EDIT net config or wait 10 seconds or ENTER to continue " -t 10 input
-    if [[ $input == $'\e' ]]; then
-        mc -e /mnt/hive-install/hive-config.stub/network/20-ethernet.network
-        sync
-        echo -e "Network configuration was edited, will continue in 2 seconds"
-        sleep 2
-    fi
 
 
     echo
@@ -183,8 +203,6 @@ function install () {
 
 
     echo
-
-
 
 
     partprobe
@@ -215,6 +233,13 @@ function install () {
 
     echo
     echo -e "${GREEN}Done. You can shutdown.${NOCOLOR}"
+    if [[ $SHUTDOWN_AFTER_FLASHING == 1 ]]; then
+	    read -n 1 -p "Will shutdown in 10 seconds. Press ESCAPE to abort or ENTER to do it right now. " -t 10 input
+    	if [[ $input == $'\e' ]]; then
+    		return 0
+    	fi
+		shutdown now
+   fi
 }
 
 

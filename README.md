@@ -28,6 +28,7 @@ RIG_ID will be autoassigned.
 
 
 ### Using RIG_ID autoincrement
+> This method is obsolete and will be discontinued. FARM_HASH is much more convenient.
 
 If you have created rigs sequentially on the web you can set starting RIG_ID in RIG_ID_SEQUENCE.txt file.
 Or you can use this with a single id as well.
@@ -35,6 +36,18 @@ This value will be autoincremented after each flashing.
 You will be prompted to change it before flashing. 
 Setting RIG_PASSWD is still required. FARM_HASH should be left blank.
 
+
+### Flasher Config
+
+There is a file `flasher-config.txt` with some settings of flasher.
+
+`SHUTDOWN_AFTER_FLASHING=1` will shutdown rig after successful image writing.
+
+`APPEND_STATIC_IP_TO_NAME=1`
+If WORKER_NAME is set in `rig-config-example.txt` and Static IP is configured then IP will be appended to worker's name.
+So WORKER_NAME is used as a prefix. 
+Let's say WORKER_NAME is set to "rig" then if you have static network the name would become "rig-192.168.0.13".
+ 
 
 
 ### Manual actions
@@ -48,6 +61,8 @@ Then you can run `/hive-flasher/hive-flasher` again.
 
 
 ### Advanced. Custom flasher system build.
+
+> This is just for fun, you don't have to do this 
 
 You can make flasher image by yourself with the following steps.
 

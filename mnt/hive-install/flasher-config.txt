@@ -1,0 +1,12 @@
+### Flasher configuration (not rig's)
+
+
+# If you want to shutdown automatically after successful flashing
+# Set this to 1 and uncomment to enable
+SHUTDOWN_AFTER_FLASHING=1
+
+
+# If WORKER_NAME is set and Static IP is configured then IP will be appended to worker's name
+# So WORKER_NAME is used as a prefix. E.g. rig-192.168.0.13
+# Set this var to 1 to enable
+APPEND_STATIC_IP_TO_NAME=1
