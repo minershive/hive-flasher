@@ -1,6 +1,6 @@
 ## Hive OS Drive Flashing Utility
 
-![image 2018-04-25 16 42 29](https://user-images.githubusercontent.com/38013470/39249615-b4d10d6a-48a7-11e8-93b4-9598f4055b6b.jpg)
+![how it looks like](https://user-images.githubusercontent.com/38013470/45325818-a2ee2400-b55a-11e8-9905-6072a9d904b2.png)
 
 
 This is a bulk flashing utility which will help you to do 
@@ -57,6 +57,11 @@ Or press Esc after the first message.
 Then maybe Alt+F2 to switch to other Linux terminal.
 Run `mc` to find /mnt/hive-install/RIG_PASSWD.txt and edit it.
 Then you can run `/hive-flasher/hive-flasher` again.
+
+
+If hive-flasher has updated in repository you may not reflash the whole image, 
+you can run `selfupgrade` to grab the latest from repository.
+
 
 
 
