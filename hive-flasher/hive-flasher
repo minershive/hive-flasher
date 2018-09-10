@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH=$PATH:/hive-flasher
 
 cd `dirname $0`
 
@@ -19,7 +20,6 @@ flasher_config=`cat $FLASHER_CONFIG_FILE | dos2unix`
 eval "$flasher_config"
 
 
-sleep 1
 
 ip=$(ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//')
 echo -e "${PURPLE}$ip${NOCOLOR}"
@@ -76,6 +76,9 @@ function install () {
 
     echo ""
     echo -e "Detected other disk ${BPURPLE}$otherdisk${NOCOLOR}"
+    echo -en ${YELLOW}
+	parted -ml | grep -m1 "$otherdisk:" | awk -F ':' '{print $7 " " $2}'
+    echo -en ${NOCOLOR}
     fdisk -l | grep "Disk $otherdisk:"
 
 
@@ -83,7 +86,6 @@ function install () {
     [[ $input == $'\e' ]] &&
         echo -e "\nEscape pressed, aborting" &&
         return 0
-    echo
 
 
 
@@ -111,46 +113,14 @@ function install () {
         echo -e "${RED}You need to set FARM_HASH in $RIG_CONF_FILE or RIG_ID sequence in $RIG_ID_SEQUENCE_FILE${NOCOLOR}" &&
         return 1
 
+
 	[[ -z $FARM_HASH && ! -z $RIG_ID ]] &&
 		RIG_ID= &&
         echo -e "${YELLOW}FARM_HASH is set, RIG_ID is ignored${NOCOLOR}"
 
 
-    [[ ! -z $FARM_HASH ]] &&
-    	echo -e "FARM_HASH:     ${CYAN}$FARM_HASH${NOCOLOR}"
 
-    [[ ! -z $RIG_ID ]] &&
-	    echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
-
-    [[ ! -z $RIG_PASSWD ]] &&
-    	echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
-
-    [[ ! -z $WORKER_NAME ]] &&
-		echo -e "WORKER_NAME:   ${GREEN}$WORKER_NAME${NOCOLOR}"
-
-
-    read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
-    if [[ $input == $'\e' ]]; then
-    	[[ ! -z $FARM_HASH ]] && return 1
-        echo
-        while true; do
-            read -p "Enter new RIG_ID: " RIG_ID
-            typeset -i RIG_ID="$RIG_ID"
-            if [[ $RIG_ID > 0 ]]; then
-                echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}"
-                sleep 2
-                FARM_HASH=
-                rig_conf=$(sed "s/^FARM_HASH=.*\$/FARM_HASH=/g" <<< "$rig_conf")
-                break
-            fi
-        done
-    fi
-    echo
-
-
-
-    echo
-
+	# Network config --------------------------------------------------------------
 
     echo -e "Default Network configuration will be written"
     read -n 1 -p "Press ESCAPE to EDIT net config or wait 10 seconds or ENTER to continue " -t 10 input
@@ -169,26 +139,100 @@ function install () {
 			Address=`echo $Address | awk -F'/' '{print $1}'`
 			WORKER_NAME+="-$Address"
 			rig_conf=$(sed "s/^WORKER_NAME=.*\$/WORKER_NAME=$WORKER_NAME/g" <<< "$rig_conf")
-			echo -e "WORKER_NAME:   ${BGREEN}$WORKER_NAME${NOCOLOR}"
-	        sleep 2
+#			echo -e "WORKER_NAME:   ${BGREEN}$WORKER_NAME${NOCOLOR}"
+#	        sleep 2
 		fi
 	fi
 
 
+
+
     echo
 
+	# Show values --------------------------------------------------------------
+
+
+    [[ ! -z $FARM_HASH ]] &&
+    	echo -e "FARM_HASH:     ${CYAN}$FARM_HASH${NOCOLOR}"
 
     [[ ! -z $RIG_ID ]] &&
+	    echo -e "RIG_ID:        ${BGREEN}$RIG_ID${NOCOLOR}"
+
+    [[ ! -z $RIG_PASSWD ]] &&
+    	echo -e "RIG_PASSWD:    ${NOCOLOR}$RIG_PASSWD${NOCOLOR}"
+
+
+
+	if [[ ! -z $RIG_ID ]]; then
+		read -n 1 -p "Press ESCAPE to change RIG_ID or wait 10 seconds or ENTER to continue " -t 10 input
+		if [[ $input == $'\e' ]]; then
+			[[ ! -z $FARM_HASH ]] && return 1
+			echo
+			while true; do
+				read -p "Enter new RIG_ID: " RIG_ID
+				typeset -i RIG_ID="$RIG_ID"
+				if [[ $RIG_ID > 0 ]]; then
+					echo -e "New RIG_ID=${GREEN}$RIG_ID${NOCOLOR}"
+					FARM_HASH=
+					rig_conf=$(sed "s/^FARM_HASH=.*\$/FARM_HASH=/g" <<< "$rig_conf")
+					sleep 2
+					break
+				fi
+			done
+		fi
+		echo
+	fi
+
+	#save rig_id to config
+    [[ ! -z $RIG_ID ]] &&
         rig_conf=$(sed "s/^RIG_ID=.*\$/RIG_ID=$RIG_ID/g" <<< "$rig_conf")
+
+
+
+	# Change worker name --------------------------------------------------------------
+
+	if [[ ! -z $FARM_HASH ]]; then
+		[[ ! -z $WORKER_NAME ]] &&
+			echo -e "WORKER_NAME:   ${GREEN}$WORKER_NAME${NOCOLOR}" ||
+			echo -e "WORKER_NAME:   ${YELLOW}<web generated>${NOCOLOR}"
+
+		read -n 1 -p "Press ESCAPE to change WORKER_NAME or wait 10 seconds or ENTER to continue " -t 10 input
+		if [[ $input == $'\e' ]]; then
+			echo
+			while true; do
+				read -p "Enter new WORKER_NAME: " WORKER_NAME
+				if [[ ! -z $WORKER_NAME ]]; then
+					echo -e "New WORKER_NAME: ${GREEN}$WORKER_NAME${NOCOLOR}"
+					rig_conf=$(sed "s/^WORKER_NAME=.*\$/WORKER_NAME=$WORKER_NAME/g" <<< "$rig_conf")
+					sleep 2
+					break
+				fi
+			done
+		fi
+		echo
+	fi
+
+
+
+	# Show values --------------------------------------------------------------
+	echo
 
     echo -e "${YELLOW}rig.conf:${NOCOLOR}"
     echo "$rig_conf" | grep -v '^#' | grep -v "^[[:space:]]*$"
 
+	echo
+
+    read -n 1 -p "Press ESCAPE to ABORT or wait 10 seconds or ENTER to continue " -t 10 input
+    [[ $input == $'\e' ]] &&
+        echo -e "\nEscape pressed, aborting" &&
+        return 0
 
 
 
+	# GO GO GO ! --------------------------------------------------------------
 
-    echo
+	echo
+	echo --------------------------------------------------------------
     echo
 
     #otherdisk=/dev/null #for testing
@@ -201,6 +245,7 @@ function install () {
 
 
 
+	# Writing files to new partition --------------------------------------------------------------
 
     echo
 
@@ -231,6 +276,9 @@ function install () {
     umount /mnt/hive-config
 
 
+	# Final actions --------------------------------------------------------------
+
+
     echo
     echo -e "${GREEN}Done. You can shutdown.${NOCOLOR}"
     if [[ $SHUTDOWN_AFTER_FLASHING == 1 ]]; then
@@ -243,9 +291,13 @@ function install () {
 }
 
 
+
+
 function shell() {
     bash --login
 }
+
+
 
 install
 
