@@ -26,9 +26,9 @@ echo -e "${PURPLE}$ip${NOCOLOR}"
 echo
 
 echo -e "${YELLOW}
-======================================
-=== Hive OS Drive Flashing Utility ===
-======================================
+===================================
+====== Flashing Utility v0.2 ======
+===================================
 ${NOCOLOR}
 "
 
@@ -41,10 +41,10 @@ function install () {
     #imgfile=`realpath hive.img`
 
 
-    imgfile=`find /mnt/hive-install -name "hive*.img" | head -n 1`
+    imgfile=`find /mnt/hive-install -name "*@*.img" | head -n 1`
 
     [[ -z $imgfile ]] &&
-        echo -e "${RED}hive image not found, place it on disk please${NOCOLOR}" &&
+        echo -e "${RED}Image not found, place it on disk please${NOCOLOR}" &&
         return 1
 
     [[ ! -e $imgfile ]] &&
@@ -52,7 +52,7 @@ function install () {
         return 1
 
 
-    echo -e "Found Hive image: ${GREEN}`basename $imgfile`${NOCOLOR}";
+    echo -e "Found image: ${GREEN}`basename $imgfile`${NOCOLOR}";
 
 
 
