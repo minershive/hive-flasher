@@ -253,7 +253,7 @@ function install () {
     echo
 
 
-    if [[ "$otherdisk" =~ nvme ]] then;
+    if [[ "$otherdisk" =~ nvme ]]; then
         otherdisk=${otherdisk}p1
     else
         otherdisk=${otherdisk}1
