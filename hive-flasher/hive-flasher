@@ -253,7 +253,11 @@ function install () {
     echo
 
 
-    [[ "$otherdisk" =~ nvme ]] && otherdisk=${otherdisk}p1 || otherdisk=${otherdisk}1
+    if [[ "$otherdisk" =~ nvme ]] then;
+        otherdisk=${otherdisk}p1
+    else
+        otherdisk=${otherdisk}1
+    fi
     mount -t ntfs-3g ${otherdisk} /mnt/hive-config
     [[ $? -ne 0 ]] && echo -e "${RED}Unable to mount ${otherdisk}${NOCOLOR}" && return 1
 
