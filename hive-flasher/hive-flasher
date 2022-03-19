@@ -81,7 +81,7 @@ function install () {
     echo ""
     echo -e "Detected other disk ${BPURPLE}$otherdisk${NOCOLOR}"
     echo -en ${YELLOW}
-	parted -ml | grep -m1 "$otherdisk:" | awk -F ':' '{print $7 " " $2}'
+	 printf "fix\n" | parted ---pretend-input-tty -ml print | grep -m1 "$otherdisk:" | awk -F ':' '{print $7 " " $2}'
     echo -en ${NOCOLOR}
     fdisk -l | grep "Disk $otherdisk:"
 
@@ -247,6 +247,7 @@ function install () {
     [[ $? -ne 0 ]] && echo -e "${RED}Error writing image${NOCOLOR}" && return 1
     sync
 
+    printf "fix\n" | parted ---pretend-input-tty -ml print > /dev/null 2>&1
     partprobe $otherdisk > /dev/null 2>&1
     
     echo -e "${YELLOW}Waiting for disk partitions to be updated...${NOCOLOR}"
