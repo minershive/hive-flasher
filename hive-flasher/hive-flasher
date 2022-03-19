@@ -67,7 +67,11 @@ function install () {
         echo -e "${RED}No other disk found${NOCOLOR}" &&
         return 1
 
-    [[ "$otherdisk" =~ nvme ]] && otherdisk=${otherdisk::-2} || otherdisk=${otherdisk::-1}
+    otherdisk=${otherdisk::-1}
+    
+    if [[ "$otherdisk" =~ p[0-9]$ ]]; then
+	otherdisk=${otherdisk::-2}
+    fi
 
     [[ -z $otherdisk ]] &&
         fdisk -l | grep 'Disk /dev/' &&
@@ -243,20 +247,21 @@ function install () {
     [[ $? -ne 0 ]] && echo -e "${RED}Error writing image${NOCOLOR}" && return 1
     sync
 
-    sgdisk -e $otherdisk > /dev/null 2>&1
-    sgdisk -C $otherdisk > /dev/null 2>&1
     partprobe $otherdisk > /dev/null 2>&1
+    
+    echo -e "${YELLOW}Waiting for disk partitions to be updated...${NOCOLOR}"
+    sleep 5
 
 
 	# Writing files to new partition --------------------------------------------------------------
 
-    echo
+    echo -e "${YELLOW}Writing hive config files${NOCOLOR}"
 
 
     if [[ "$otherdisk" =~ nvme ]]; then
-        otherdisk=${otherdisk}p1
+        otherdisk="${otherdisk}p1"
     else
-        otherdisk=${otherdisk}1
+        otherdisk="${otherdisk}1"
     fi
     mount -t ntfs-3g ${otherdisk} /mnt/hive-config
     [[ $? -ne 0 ]] && echo -e "${RED}Unable to mount ${otherdisk}${NOCOLOR}" && return 1
