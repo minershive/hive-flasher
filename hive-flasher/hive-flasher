@@ -27,7 +27,7 @@ echo
 
 echo -e "${YELLOW}
 ===================================
-====== Flashing Utility v0.2 ======
+====== Flashing Utility v0.3 ======
 ===================================
 ${NOCOLOR}
 "
@@ -246,14 +246,15 @@ function install () {
     sgdisk -e $otherdisk > /dev/null 2>&1
     sgdisk -C $otherdisk > /dev/null 2>&1
     partprobe $otherdisk > /dev/null 2>&1
+    sleep 5
 
 
 	# Writing files to new partition --------------------------------------------------------------
 
     echo
 
-
     [[ "$otherdisk" =~ nvme ]] && otherdisk=${otherdisk}p1 || otherdisk=${otherdisk}1
+    echo -e "${YELLOW}Writing configuration to $otherdisk${NOCOLOR}"
     mount -t ntfs-3g ${otherdisk} /mnt/hive-config
     [[ $? -ne 0 ]] && echo -e "${RED}Unable to mount ${otherdisk}${NOCOLOR}" && return 1
 
